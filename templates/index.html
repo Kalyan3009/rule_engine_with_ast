@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rule Engine UI</title>
+
+  <!-- Bootstrap CSS -->
+  <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+  <style>
+    body {
+      background: linear-gradient(135deg, #f8f9fa 0%, #ebedee 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      max-width: 700px;
+      background-color: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      margin-bottom: 30px;
+      color: #4b0082;
+      font-weight: 700;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .btn-custom {
+      background-color: #ffdd57;
+      color: #4b0082;
+      border: none;
+      transition: background-color 0.4s ease, color 0.4s ease;
+    }
+
+    .btn-custom:hover {
+      background-color: #6f42c1;
+      color: white;
+    }
+
+    .form-label {
+      font-weight: 600;
+      color: #495057;
+    }
+
+    .result {
+      margin-top: 20px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Rule Engine UI</h1>
+
+    <!-- Rule Metadata Inputs -->
+    <div class="mb-3">
+      <label for="ruleName" class="form-label">Rule Name:</label>
+      <input type="text" class="form-control" id="ruleName" placeholder="Enter rule name">
+    </div>
+
+    <div class="mb-3">
+      <label for="description" class="form-label">Description:</label>
+      <textarea class="form-control" id="description" rows="3" placeholder="Enter rule description"></textarea>
+    </div>
+
+    <div class="mb-3">
+      <label for="rule" class="form-label">Rule String:</label>
+      <input type="text" class="form-control" id="rule" placeholder="Enter rule string">
+    </div>
+
+    <div class="mb-3">
+      <label for="status" class="form-label">Status:</label>
+      <select class="form-select" id="status">
+        <option value="active" selected>Active</option>
+        <option value="inactive">Inactive</option>
+      </select>
+    </div>
+
+    <button class="btn btn-custom w-100 mb-4" onclick="createRule()">Create Rule</button>
+
+    <!-- User Data Input -->
+    <div class="mb-3">
+      <label for="data" class="form-label">Enter User Data (JSON):</label>
+      <textarea class="form-control" id="data" rows="5" 
+        placeholder='{"age": 35, "department": "Sales", "salary": 60000, "experience": 3}'></textarea>
+    </div>
+
+    <button class="btn btn-custom w-100" onclick="evaluateRule()">Evaluate Rule</button>
+
+    <div class="result" id="result"></div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+
+  <script>
+    const API_BASE_URL = "http://localhost:5000/api";
+
+    // Function to create a rule with metadata
+    async function createRule() {
+      const ruleName = document.getElementById("ruleName").value;
+      const description = document.getElementById("description").value;
+      const rule = document.getElementById("rule").value;
+      const status = document.getElementById("status").value;
+
+      try {
+        const response = await fetch("http://localhost:5000/api/create_rule", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            rule_name: ruleName,
+            description: description,
+            rule_string: rule,
+            status: status
+          })
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          alert("Rule created successfully! AST: " + JSON.stringify(data.ast));
+        } else {
+          alert("Error: " + data.error);
+        }
+      } catch (error) {
+        console.error("Error creating rule:", error);
+        alert("Failed to create rule.");
+      }
+    }
+
+
+    // Function to evaluate the rule
+    async function evaluateRule() {
+      const dataInput = document.getElementById("data").value;
+
+      try {
+        const data = JSON.parse(dataInput);
+        const response = await fetch(`${API_BASE_URL}/evaluate_rule`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ data })
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+          document.getElementById("result").innerText =
+            result.result ? "True" : "False";
+        } else {
+          alert("Error: " + result.error);
+        }
+      } catch (error) {
+        alert("Invalid JSON format or failed to evaluate rule.");
+        console.error("Error evaluating rule:", error);
+      }
+    }
+  </script>
+</body>
+</html>
